@@ -3,21 +3,29 @@
 <head>
   <meta charset="UTF-8" />
   <title>Chat privado</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="container">
-    <input type="text" id="username" placeholder="Tu usuario" />
-    <div id="messages"></div>
-    <div id="inputArea">
-      <input type="text" id="message" placeholder="Escribe un mensaje..." />
-      <button id="sendBtn">Enviar</button>
+    <div id="loginArea">
+      <input type="text" id="username" placeholder="Tu usuario" />
+      <button id="loginBtn">Entrar al chat</button>
+      <p id="error" style="color:red; display:none;">Usuario no permitido.</p>
+    </div>
+
+    <div id="chatArea" style="display:none;">
+      <div id="messages"></div>
+      <div id="inputArea">
+        <input type="text" id="message" placeholder="Escribe un mensaje..." />
+        <button id="sendBtn">Enviar</button>
+      </div>
+      <button id="logoutBtn" style="margin-top:10px;">Salir</button>
     </div>
   </div>
 
   <!-- Firebase scripts -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-  <script src="script.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
