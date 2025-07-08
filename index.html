@@ -2,22 +2,22 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Chat con localStorage bonito</title>
+  <title>Chat privado</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-
   <div class="container">
-    <input id="username" placeholder="Tu usuario" />
-    <button id="loginBtn">Entrar</button>
-
-    <div id="chat" style="display:none; flex-direction: column; height: 100%;">
-      <div id="messages"></div>
-      <input id="message" placeholder="Escribe un mensaje" />
+    <input type="text" id="username" placeholder="Tu usuario" />
+    <div id="messages"></div>
+    <div id="inputArea">
+      <input type="text" id="message" placeholder="Escribe un mensaje..." />
       <button id="sendBtn">Enviar</button>
     </div>
   </div>
 
+  <!-- Firebase scripts -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
