@@ -26,6 +26,7 @@ const messagesDiv = document.getElementById('messages');
 const sendBtn = document.getElementById('sendBtn');
 const messageInput = document.getElementById('message');
 const logoutBtn = document.getElementById('logoutBtn');
+const clearBtn = document.getElementById('clearBtn');
 
 let currentUser = null;
 
@@ -39,6 +40,9 @@ loginBtn.addEventListener('click', () => {
     listenMessages();
   } else {
     errorP.style.display = 'block';
+    setTimeout(() => {
+      errorP.style.display = 'none';
+    }, 3000); // desaparece en 3 segundos
   }
 });
 
@@ -56,10 +60,25 @@ logoutBtn.addEventListener('click', () => {
   loginArea.style.display = 'block';
   messagesDiv.innerHTML = '';
   usernameInput.value = '';
+  db.ref('chat').off(); // Desconecta listener para no acumular
+});
+
+clearBtn.addEventListener('click', () => {
+  if (!currentUser) return alert('Debes iniciar sesión primero.');
+  if (currentUser !== 'benjamín1') return alert('No tienes permiso para borrar el chat.');
+
+  if (confirm('¿Seguro que quieres borrar todo el historial del chat? Esta acción no se puede deshacer.')) {
+    db.ref('chat').remove()
+      .then(() => {
+        messagesDiv.innerHTML = '';
+        alert('Historial borrado.');
+      })
+      .catch(err => alert('Error al borrar: ' + err.message));
+  }
 });
 
 function listenMessages() {
-  db.ref('chat').off(); // Quitar listeners antiguos si hubiera
+  db.ref('chat').off();
   db.ref('chat').on('child_added', snapshot => {
     const msg = snapshot.val();
     const div = document.createElement('div');
