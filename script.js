@@ -1,3 +1,4 @@
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyCJP24FBp7XrrXtrYnryM9cGqOdJiTEXFM",
   authDomain: "chat-privado-59115.firebaseapp.com",
@@ -9,39 +10,37 @@ const firebaseConfig = {
   measurementId: "G-53652YBZTL"
 };
 
+// Inicializar Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const allowedUsers = {
-  'benjamin': '1234benja',
-  'enzo': 'enzo124',
-  'angie': '123angie'
+  'benjamín1': '1234benja',
+  'angie2': '123angie',
+  'enzoo': 'enzo124'
 };
 
 let currentUser = "";
 
+// LOGIN
 function login() {
-  const username = document.getElementById("username").value.trim().toLowerCase();
-  const password = document.getElementById("password").value;
+  const usernameInput = document.getElementById("username").value.trim().toLowerCase();
+  const passwordInput = document.getElementById("password").value.trim();
 
-  if (allowedUsers[username] && allowedUsers[username] === password) {
-    currentUser = username;
-    document.getElementById("loginArea").style.display = "none";
-    document.getElementById("chatArea").style.display = "flex";
-    document.getElementById("welcome").textContent = `Bienvenido, ${currentUser}`;
-    if (currentUser === "benjamin") {
-      document.getElementById("deleteAllBtn").style.display = "inline-block";
-    }
-    updateOnlineStatus(true);
+  if (allowedUsers[usernameInput] && allowedUsers[usernameInput] === passwordInput) {
+    currentUser = usernameInput;
+    document.getElementById("login").style.display = "none";
+    document.getElementById("chat").style.display = "block";
   } else {
     const error = document.getElementById("error");
-    error.textContent = "Usuario o contraseña incorrectos.";
-    setTimeout(() => { error.textContent = ""; }, 3000);
+    error.style.display = "block";
+    setTimeout(() => error.style.display = "none", 3000);
   }
 }
 
+// ENVIAR MENSAJE DE TEXTO
 function sendMessage() {
-  const input = document.getElementById("messageInput");
+  const input = document.getElementById("message");
   const text = input.value.trim();
   if (text === "") return;
 
@@ -49,95 +48,86 @@ function sendMessage() {
   db.ref("chat").push({
     user: currentUser,
     message: text,
-    time: timestamp
+    time: timestamp,
+    type: "text"
   });
 
   input.value = "";
 }
 
-function addMessage(key, data) {
-  const msgDiv = document.createElement("div");
-  msgDiv.classList.add("message");
-  msgDiv.classList.add(data.user === currentUser ? "mine" : "other");
-  msgDiv.dataset.key = key;
-
-  let content = `<strong>${data.user}:</strong> `;
-  if (data.imageUrl) {
-    content += `<br><img src="${data.imageUrl}" style="max-width: 200px; border-radius: 8px;">`;
-  } else {
-    content += data.message;
-  }
-
-  content += `<div class="time">${new Date(data.time).toLocaleString()}</div>`;
-  msgDiv.innerHTML = content;
-
-  if (data.user === currentUser || currentUser === "benjamin") {
-    const btn = document.createElement("button");
-    btn.textContent = "🗑";
-    btn.classList.add("deleteBtn");
-    btn.onclick = () => {
-      if (confirm("¿Eliminar este mensaje?")) {
-        db.ref("chat/" + key).remove();
-      }
-    };
-    msgDiv.appendChild(btn);
-  }
-
-  document.getElementById("messages").appendChild(msgDiv);
-  document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
-}
-
-function deleteAllMessages() {
-  if (confirm("¿Seguro que quieres borrar todos los mensajes?")) {
-    db.ref("chat").remove();
-  }
-}
-
-function uploadImage() {
-  const fileInput = document.getElementById("imageInput");
-  const file = fileInput.files[0];
+// ENVIAR IMAGEN
+function sendImage(event) {
+  const file = event.target.files[0];
   if (!file) return;
 
   const reader = new FileReader();
-  reader.onload = () => {
-    const imageUrl = reader.result;
+  reader.onload = function (e) {
     const timestamp = new Date().toISOString();
     db.ref("chat").push({
       user: currentUser,
-      imageUrl,
-      time: timestamp
+      message: e.target.result,
+      time: timestamp,
+      type: "image"
     });
   };
   reader.readAsDataURL(file);
 }
 
+// AÑADIR MENSAJE AL CHAT
+function addMessage(key, data) {
+  const messagesDiv = document.getElementById("messages");
+  const div = document.createElement("div");
+  div.classList.add("message");
+
+  const isMine = data.user === currentUser;
+  const isAdmin = currentUser === "benjamín1";
+
+  let content = `<span><b>${data.user}</b> <small>${formatTime(data.time)}</small>:</span> `;
+
+  if (data.type === "image") {
+    content += `<br><img src="${data.message}" style="max-width:100%; border-radius:10px;" />`;
+  } else {
+    content += `${data.message}`;
+  }
+
+  if (isMine || isAdmin) {
+    content += ` <button onclick="deleteMessage('${key}')" style="margin-left:8px;">🗑️</button>`;
+  }
+
+  div.innerHTML = content;
+  messagesDiv.appendChild(div);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+// BORRAR UN MENSAJE
+function deleteMessage(key) {
+  db.ref("chat").child(key).remove();
+}
+
+// FORMATEAR HORA
+function formatTime(timestamp) {
+  const date = new Date(timestamp);
+  return date.toLocaleString();
+}
+
+// BORRAR TODOS LOS MENSAJES (SOLO ADMIN)
+function deleteAllMessages() {
+  if (currentUser === "benjamín1") {
+    if (confirm("¿Seguro que deseas borrar todos los mensajes?")) {
+      db.ref("chat").remove();
+    }
+  }
+}
+
+// ESCUCHAR NUEVOS MENSAJES
 db.ref("chat").on("child_added", snapshot => {
   addMessage(snapshot.key, snapshot.val());
 });
+
 db.ref("chat").on("child_removed", snapshot => {
-  const el = document.querySelector(`.message[data-key="${snapshot.key}"]`);
-  if (el) el.remove();
-});
-
-const connectedRef = db.ref(".info/connected");
-const usersRef = db.ref("online");
-
-function updateOnlineStatus(connected) {
-  if (connected) {
-    const userRef = usersRef.child(currentUser);
-    userRef.set(true);
-    userRef.onDisconnect().remove();
-  }
-
-  usersRef.on("value", snapshot => {
-    const users = snapshot.val() || {};
-    const names = Object.keys(users).join(", ");
-    document.getElementById("onlineUsers").textContent = `Conectados: ${names}`;
+  document.querySelectorAll(".message").forEach(msg => {
+    if (msg.innerHTML.includes(snapshot.key)) {
+      msg.remove();
+    }
   });
-}
-
-connectedRef.on("value", snap => {
-  if (snap.val() === true && currentUser) {
-    updateOnlineStatus(true);
-  }
 });
