@@ -15,9 +15,9 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const allowedUsers = {
-  'benjamín1': '1234benja',
-  'angie2': '123angie',
-  'enzoo': 'enzo124'
+  'benja': '1234benja',
+  'angie': '123angie',
+  'enzo': 'enzo124'
 };
 
 let currentUser = "";
@@ -80,7 +80,7 @@ function addMessage(key, data) {
   div.classList.add("message");
 
   const isMine = data.user === currentUser;
-  const isAdmin = currentUser === "benjamín1";
+  const isAdmin = currentUser === "benja";
 
   let content = `<span><b>${data.user}</b> <small>${formatTime(data.time)}</small>:</span> `;
 
@@ -112,7 +112,7 @@ function formatTime(timestamp) {
 
 // BORRAR TODOS LOS MENSAJES (SOLO ADMIN)
 function deleteAllMessages() {
-  if (currentUser === "benjamín1") {
+  if (currentUser === "benja") {
     if (confirm("¿Seguro que deseas borrar todos los mensajes?")) {
       db.ref("chat").remove();
     }
@@ -125,9 +125,12 @@ db.ref("chat").on("child_added", snapshot => {
 });
 
 db.ref("chat").on("child_removed", snapshot => {
-  document.querySelectorAll(".message").forEach(msg => {
-    if (msg.innerHTML.includes(snapshot.key)) {
-      msg.remove();
+  // Eliminar mensaje del DOM si existe
+  const messagesDiv = document.getElementById("messages");
+  const children = Array.from(messagesDiv.children);
+  children.forEach(child => {
+    if (child.querySelector("button") && child.querySelector("button").onclick.toString().includes(snapshot.key)) {
+      messagesDiv.removeChild(child);
     }
   });
 });
