@@ -30,7 +30,14 @@ function login() {
   if (allowedUsers[usernameInput] && allowedUsers[usernameInput] === passwordInput) {
     currentUser = usernameInput;
     document.getElementById("login").style.display = "none";
-    document.getElementById("chat").style.display = "block";
+    document.getElementById("chat").style.display = "flex";
+
+    // Mostrar botón borrar todos si usuario es benja
+    if (currentUser === "benja") {
+      document.getElementById("deleteAllBtn").style.display = "block";
+    } else {
+      document.getElementById("deleteAllBtn").style.display = "none";
+    }
   } else {
     const error = document.getElementById("error");
     error.style.display = "block";
@@ -71,6 +78,9 @@ function sendImage(event) {
     });
   };
   reader.readAsDataURL(file);
+
+  // Reset input for next upload
+  event.target.value = "";
 }
 
 // AÑADIR MENSAJE AL CHAT
@@ -85,13 +95,13 @@ function addMessage(key, data) {
   let content = `<span><b>${data.user}</b> <small>${formatTime(data.time)}</small>:</span> `;
 
   if (data.type === "image") {
-    content += `<br><img src="${data.message}" style="max-width:100%; border-radius:10px;" />`;
+    content += `<br><img src="${data.message}" alt="imagen enviada" />`;
   } else {
     content += `${data.message}`;
   }
 
   if (isMine || isAdmin) {
-    content += ` <button onclick="deleteMessage('${key}')" style="margin-left:8px;">🗑️</button>`;
+    content += ` <button onclick="deleteMessage('${key}')">🗑️</button>`;
   }
 
   div.innerHTML = content;
@@ -125,7 +135,6 @@ db.ref("chat").on("child_added", snapshot => {
 });
 
 db.ref("chat").on("child_removed", snapshot => {
-  // Eliminar mensaje del DOM si existe
   const messagesDiv = document.getElementById("messages");
   const children = Array.from(messagesDiv.children);
   children.forEach(child => {
