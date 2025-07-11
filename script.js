@@ -1,13 +1,9 @@
-// Usuarios permitidos
-const allowedUsers = ['benjamín1', 'enzoo', 'angie2'];
-
-// Configuración Firebase con tus datos
 const firebaseConfig = {
   apiKey: "AIzaSyCJP24FBp7XrrXtrYnryM9cGqOdJiTEXFM",
   authDomain: "chat-privado-59115.firebaseapp.com",
   databaseURL: "https://chat-privado-59115-default-rtdb.firebaseio.com",
   projectId: "chat-privado-59115",
-  storageBucket: "chat-privado-59115.firebasestorage.app",
+  storageBucket: "chat-privado-59115.appspot.com",
   messagingSenderId: "1092522382941",
   appId: "1:1092522382941:web:95ec64a47008e6a62ddfb4",
   measurementId: "G-53652YBZTL"
@@ -16,61 +12,132 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-const loginArea = document.getElementById('loginArea');
-const chatArea = document.getElementById('chatArea');
-const usernameInput = document.getElementById('username');
-const loginBtn = document.getElementById('loginBtn');
-const errorP = document.getElementById('error');
+const allowedUsers = {
+  'benjamin': '1234benja',
+  'enzo': 'enzo124',
+  'angie': '123angie'
+};
 
-const messagesDiv = document.getElementById('messages');
-const sendBtn = document.getElementById('sendBtn');
-const messageInput = document.getElementById('message');
-const logoutBtn = document.getElementById('logoutBtn');
+let currentUser = "";
 
-let currentUser = null;
+function login() {
+  const username = document.getElementById("username").value.trim().toLowerCase();
+  const password = document.getElementById("password").value;
 
-loginBtn.addEventListener('click', () => {
-  const user = usernameInput.value.trim().toLowerCase();
-  if (allowedUsers.includes(user)) {
-    currentUser = user;
-    loginArea.style.display = 'none';
-    chatArea.style.display = 'flex';
-    errorP.style.display = 'none';
-    listenMessages();
+  if (allowedUsers[username] && allowedUsers[username] === password) {
+    currentUser = username;
+    document.getElementById("loginArea").style.display = "none";
+    document.getElementById("chatArea").style.display = "flex";
+    document.getElementById("welcome").textContent = `Bienvenido, ${currentUser}`;
+    if (currentUser === "benjamin") {
+      document.getElementById("deleteAllBtn").style.display = "inline-block";
+    }
+    updateOnlineStatus(true);
   } else {
-    errorP.style.display = 'block';
-    setTimeout(() => {
-      errorP.style.display = 'none';
-    }, 3000); // desaparece en 3 segundos
+    const error = document.getElementById("error");
+    error.textContent = "Usuario o contraseña incorrectos.";
+    setTimeout(() => { error.textContent = ""; }, 3000);
   }
+}
+
+function sendMessage() {
+  const input = document.getElementById("messageInput");
+  const text = input.value.trim();
+  if (text === "") return;
+
+  const timestamp = new Date().toISOString();
+  db.ref("chat").push({
+    user: currentUser,
+    message: text,
+    time: timestamp
+  });
+
+  input.value = "";
+}
+
+function addMessage(key, data) {
+  const msgDiv = document.createElement("div");
+  msgDiv.classList.add("message");
+  msgDiv.classList.add(data.user === currentUser ? "mine" : "other");
+  msgDiv.dataset.key = key;
+
+  let content = `<strong>${data.user}:</strong> `;
+  if (data.imageUrl) {
+    content += `<br><img src="${data.imageUrl}" style="max-width: 200px; border-radius: 8px;">`;
+  } else {
+    content += data.message;
+  }
+
+  content += `<div class="time">${new Date(data.time).toLocaleString()}</div>`;
+  msgDiv.innerHTML = content;
+
+  if (data.user === currentUser || currentUser === "benjamin") {
+    const btn = document.createElement("button");
+    btn.textContent = "🗑";
+    btn.classList.add("deleteBtn");
+    btn.onclick = () => {
+      if (confirm("¿Eliminar este mensaje?")) {
+        db.ref("chat/" + key).remove();
+      }
+    };
+    msgDiv.appendChild(btn);
+  }
+
+  document.getElementById("messages").appendChild(msgDiv);
+  document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+}
+
+function deleteAllMessages() {
+  if (confirm("¿Seguro que quieres borrar todos los mensajes?")) {
+    db.ref("chat").remove();
+  }
+}
+
+function uploadImage() {
+  const fileInput = document.getElementById("imageInput");
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    const imageUrl = reader.result;
+    const timestamp = new Date().toISOString();
+    db.ref("chat").push({
+      user: currentUser,
+      imageUrl,
+      time: timestamp
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+db.ref("chat").on("child_added", snapshot => {
+  addMessage(snapshot.key, snapshot.val());
+});
+db.ref("chat").on("child_removed", snapshot => {
+  const el = document.querySelector(`.message[data-key="${snapshot.key}"]`);
+  if (el) el.remove();
 });
 
-sendBtn.addEventListener('click', () => {
-  if (!currentUser) return alert('Debes iniciar sesión primero.');
-  const text = messageInput.value.trim();
-  if (!text) return;
-  db.ref('chat').push({ user: currentUser, text, timestamp: Date.now() });
-  messageInput.value = '';
-});
+const connectedRef = db.ref(".info/connected");
+const usersRef = db.ref("online");
 
-logoutBtn.addEventListener('click', () => {
-  currentUser = null;
-  chatArea.style.display = 'none';
-  loginArea.style.display = 'block';
-  messagesDiv.innerHTML = '';
-  usernameInput.value = '';
-  db.ref('chat').off(); // Desconecta listener para no acumular
-});
+function updateOnlineStatus(connected) {
+  if (connected) {
+    const userRef = usersRef.child(currentUser);
+    userRef.set(true);
+    userRef.onDisconnect().remove();
+  }
 
-
-function listenMessages() {
-  db.ref('chat').off();
-  db.ref('chat').on('child_added', snapshot => {
-    const msg = snapshot.val();
-    const div = document.createElement('div');
-    div.classList.add('message');
-    div.innerHTML = `<span>${msg.user}:</span> ${msg.text}`;
-    messagesDiv.appendChild(div);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  usersRef.on("value", snapshot => {
+    const users = snapshot.val() || {};
+    const names = Object.keys(users).join(", ");
+    document.getElementById("onlineUsers").textContent = `Conectados: ${names}`;
   });
 }
+
+connectedRef.on("value", snap => {
+  if (snap.val() === true && currentUser) {
+    updateOnlineStatus(true);
+  }
+});
