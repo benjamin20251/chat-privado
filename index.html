@@ -2,40 +2,39 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chat Privado</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
   <div class="container">
-
     <div id="login">
-      <h2>Chat Privado</h2>
-      <input type="text" id="username" placeholder="Tu usuario (benja, angie, enzo)" autocomplete="off" />
-      <input type="password" id="password" placeholder="Tu contraseña" autocomplete="off" />
+      <h2>Iniciar sesión</h2>
+      <input type="text" id="username" placeholder="Usuario" />
+      <input type="password" id="password" placeholder="Contraseña" />
       <button onclick="login()">Entrar</button>
-      <p id="error">Usuario o contraseña no permitidos.</p>
+      <p id="error">Usuario o contraseña incorrectos</p>
     </div>
 
-    <div id="chat" style="display:none;">
-      <h2>Chat</h2>
-      <button id="deleteAllBtn" onclick="deleteAllMessages()" style="display:none;">Borrar todos los mensajes</button>
+    <div id="chat">
+      <div class="chat-header">
+        <span id="userDisplay"></span>
+        <button id="deleteAllBtn" onclick="deleteAllMessages()">🗑️ Borrar todo</button>
+      </div>
       <div id="messages"></div>
-      <input type="text" id="message" placeholder="Escribe un mensaje..." autocomplete="off" />
-      <label for="imageInput">📷 Seleccionar imagen</label>
-      <input type="file" id="imageInput" accept="image/*" onchange="sendImage(event)" />
-      <button onclick="sendMessage()">Enviar</button>
+      <div class="chat-controls">
+        <input type="text" id="message" placeholder="Escribe un mensaje..." />
+        <button onclick="sendMessage()">Enviar</button>
+        <label class="file-label">
+          <input type="file" accept="image/*" onchange="sendImage(event)" />
+          <img src="upload-icon.png" alt="Enviar imagen" />
+        </label>
+      </div>
     </div>
-
   </div>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-  <!-- Script JS -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
   <script src="script.js"></script>
-
 </body>
 </html>
