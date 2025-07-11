@@ -1,4 +1,3 @@
-// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyCJP24FBp7XrrXtrYnryM9cGqOdJiTEXFM",
   authDomain: "chat-privado-59115.firebaseapp.com",
@@ -13,91 +12,132 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-const users = {
-  benja: '1234benja',
-  angie: '123angie',
-  enzo: 'enzo124'
+const allowedUsers = {
+  'benja': '1234benja',
+  'enzo': 'enzo124',
+  'angie': '123angie'
 };
 
-let currentUser = '';
+let currentUser = "";
 
 function login() {
-  const username = document.getElementById('username').value.trim();
-  const password = document.getElementById('password').value.trim();
-  const error = document.getElementById('error');
+  const username = document.getElementById("username").value.trim().toLowerCase();
+  const password = document.getElementById("password").value;
 
-  if (users[username] && users[username] === password) {
+  if (allowedUsers[username] && allowedUsers[username] === password) {
     currentUser = username;
-    document.getElementById('login').style.display = 'none';
-    document.getElementById('chat').style.display = 'flex';
-    document.getElementById('userDisplay').textContent = `Usuario: ${username}`;
-    listenMessages();
+    document.getElementById("loginArea").style.display = "none";
+    document.getElementById("chatArea").style.display = "flex";
+    document.getElementById("welcome").textContent = `Bienvenido, ${currentUser}`;
+    if (currentUser === "benja") {
+      document.getElementById("deleteAllBtn").style.display = "inline-block";
+    }
+    updateOnlineStatus(true);
   } else {
-    error.style.display = 'block';
-    setTimeout(() => error.style.display = 'none', 3000);
+    const error = document.getElementById("error");
+    error.textContent = "Usuario o contraseña incorrectos.";
+    setTimeout(() => { error.textContent = ""; }, 3000);
   }
 }
 
 function sendMessage() {
-  const msg = document.getElementById('message').value.trim();
-  if (!msg) return;
+  const input = document.getElementById("messageInput");
+  const text = input.value.trim();
+  if (text === "") return;
 
-  const newMsgRef = db.ref('messages').push();
-  newMsgRef.set({
+  const timestamp = new Date().toISOString();
+  db.ref("chat").push({
     user: currentUser,
-    text: msg,
-    timestamp: Date.now()
+    message: text,
+    time: timestamp
   });
 
-  document.getElementById('message').value = '';
+  input.value = "";
 }
 
-function sendImage(event) {
-  const file = event.target.files[0];
+function addMessage(key, data) {
+  const msgDiv = document.createElement("div");
+  msgDiv.classList.add("message");
+  msgDiv.classList.add(data.user === currentUser ? "mine" : "other");
+  msgDiv.dataset.key = key;
+
+  let content = `<strong>${data.user}:</strong> `;
+  if (data.imageUrl) {
+    content += `<br><img src="${data.imageUrl}" style="max-width: 200px; border-radius: 8px;">`;
+  } else {
+    content += data.message;
+  }
+
+  content += `<div class="time">${new Date(data.time).toLocaleString()}</div>`;
+  msgDiv.innerHTML = content;
+
+  if (data.user === currentUser || currentUser === "benja") {
+    const btn = document.createElement("button");
+    btn.textContent = "🗑";
+    btn.classList.add("deleteBtn");
+    btn.onclick = () => {
+      if (confirm("¿Eliminar este mensaje?")) {
+        db.ref("chat/" + key).remove();
+      }
+    };
+    msgDiv.appendChild(btn);
+  }
+
+  document.getElementById("messages").appendChild(msgDiv);
+  document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+}
+
+function deleteAllMessages() {
+  if (confirm("¿Seguro que quieres borrar todos los mensajes?")) {
+    db.ref("chat").remove();
+  }
+}
+
+function uploadImage() {
+  const fileInput = document.getElementById("imageInput");
+  const file = fileInput.files[0];
   if (!file) return;
 
   const reader = new FileReader();
   reader.onload = () => {
-    const newMsgRef = db.ref('messages').push();
-    newMsgRef.set({
+    const imageUrl = reader.result;
+    const timestamp = new Date().toISOString();
+    db.ref("chat").push({
       user: currentUser,
-      image: reader.result,
-      timestamp: Date.now()
+      imageUrl,
+      time: timestamp
     });
   };
   reader.readAsDataURL(file);
 }
 
-function listenMessages() {
-  const messagesDiv = document.getElementById('messages');
-  db.ref('messages').on('value', snapshot => {
-    messagesDiv.innerHTML = '';
-    snapshot.forEach(child => {
-      const msg = child.val();
-      const div = document.createElement('div');
-      div.className = 'message';
-      let content = `<span>${msg.user} (${new Date(msg.timestamp).toLocaleTimeString()}):</span>`;
-      if (msg.text) content += msg.text;
-      if (msg.image) content += `<br><img class="chat-img" src="${msg.image}" />`;
+db.ref("chat").on("child_added", snapshot => {
+  addMessage(snapshot.key, snapshot.val());
+});
+db.ref("chat").on("child_removed", snapshot => {
+  const el = document.querySelector(`.message[data-key="${snapshot.key}"]`);
+  if (el) el.remove();
+});
 
-      // Mostrar botón borrar si es el autor o es benja
-      if (msg.user === currentUser || currentUser === 'benja') {
-        content += ` <button class="deleteBtn" onclick="deleteMessage('${child.key}')">🗑️</button>`;
-      }
+const connectedRef = db.ref(".info/connected");
+const usersRef = db.ref("online");
 
-      div.innerHTML = content;
-      messagesDiv.appendChild(div);
-    });
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+function updateOnlineStatus(connected) {
+  if (connected) {
+    const userRef = usersRef.child(currentUser);
+    userRef.set(true);
+    userRef.onDisconnect().remove();
+  }
+
+  usersRef.on("value", snapshot => {
+    const users = snapshot.val() || {};
+    const names = Object.keys(users).join(", ");
+    document.getElementById("onlineUsers").textContent = `Conectados: ${names}`;
   });
 }
 
-function deleteMessage(key) {
-  db.ref('messages/' + key).remove();
-}
-
-function deleteAllMessages() {
-  if (currentUser === 'benja') {
-    db.ref('messages').remove();
+connectedRef.on("value", snap => {
+  if (snap.val() === true && currentUser) {
+    updateOnlineStatus(true);
   }
-}
+});
