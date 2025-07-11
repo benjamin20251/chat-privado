@@ -2,39 +2,41 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chat Privado</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="container">
-    <div id="login">
-      <h2>Iniciar sesión</h2>
-      <input type="text" id="username" placeholder="Usuario" />
-      <input type="password" id="password" placeholder="Contraseña" />
+    <div id="loginArea">
+      <h2>Inicia sesión</h2>
+      <input type="text" id="username" placeholder="Usuario">
+      <input type="password" id="password" placeholder="Contraseña">
       <button onclick="login()">Entrar</button>
-      <p id="error">Usuario o contraseña incorrectos</p>
+      <p id="error"></p>
     </div>
 
-    <div id="chat">
-      <div class="chat-header">
-        <span id="userDisplay"></span>
-        <button id="deleteAllBtn" onclick="deleteAllMessages()">🗑️ Borrar todo</button>
+    <div id="chatArea" style="display: none;">
+      <div id="header">
+        <span id="welcome"></span>
+        <span id="onlineUsers"></span>
+        <button id="deleteAllBtn" style="display: none;" onclick="deleteAllMessages()">🗑️ Borrar Todo</button>
       </div>
+
       <div id="messages"></div>
-      <div class="chat-controls">
-        <input type="text" id="message" placeholder="Escribe un mensaje..." />
-        <button onclick="sendMessage()">Enviar</button>
-        <label class="file-label">
-          <input type="file" accept="image/*" onchange="sendImage(event)" />
-          <img src="upload-icon.png" alt="Enviar imagen" />
+
+      <div id="inputArea">
+        <input type="text" id="messageInput" placeholder="Escribe un mensaje...">
+        <label id="fileLabel">
+          <input type="file" id="imageInput" onchange="uploadImage()" />
+          <img src="https://img.icons8.com/ios-filled/24/image.png" alt="Adjuntar Imagen"/>
         </label>
+        <button onclick="sendMessage()">Enviar</button>
       </div>
     </div>
   </div>
 
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
